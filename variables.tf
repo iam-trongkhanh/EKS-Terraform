@@ -93,7 +93,9 @@ variable "single_nat_gateway" {
 variable "node_group_instance_types" {
   description = "EC2 instance types for managed node groups"
   type        = list(string)
-   default = ["t3.medium"]
+  # Default instance type for EKS worker nodes
+  # You changed this from t3.medium to t3.small
+  default = ["t3.small"]
 }
 
 variable "node_group_capacity_type" {
