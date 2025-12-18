@@ -42,12 +42,11 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
 
-  cluster_service_ipv4_cidr = "172.20.0.0/16" # Kubernetes service CIDR (must not overlap with VPC CIDR)
+  cluster_service_ipv4_cidr = "172.20.0.0/16"
   cluster_role_arn          = module.iam.cluster_role_arn
 
   enabled_cluster_log_types = var.enabled_cluster_log_types
 
-  # OIDC provider for IRSA
   enable_irsa = true
 
   tags = local.common_tags
@@ -112,7 +111,7 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
           groups   = ["system:bootstrappers", "system:nodes"]
         }
       ],
-      var.jenkins_iam_role_arn != "________REPLACE_WITH_JENKINS_IAM_ROLE_ARN________" ? [
+      var.jenkins_iam_role_arn != "" ? [
         {
           rolearn  = var.jenkins_iam_role_arn
           username = "jenkins"
@@ -140,7 +139,6 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
   ]
 
   lifecycle {
-    # Protect against accidental deletion
     create_before_destroy = true
   }
 }

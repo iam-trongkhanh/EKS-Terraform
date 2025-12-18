@@ -11,18 +11,14 @@ resource "aws_eks_cluster" "main" {
     subnet_ids              = var.subnet_ids
     endpoint_private_access = true
     endpoint_public_access  = true
-    # Control plane endpoint access (can be restricted further if needed)
-    # endpoint_public_access_cidrs = ["0.0.0.0/0"] # TODO: Restrict to specific IPs if required
   }
 
   kubernetes_network_config {
     service_ipv4_cidr = var.cluster_service_ipv4_cidr
   }
 
-  # Enable control plane logging
   enabled_cluster_log_types = var.enabled_cluster_log_types
 
-  # Encryption configuration
   encryption_config {
     provider {
       key_arn = aws_kms_key.eks.arn
@@ -65,7 +61,7 @@ resource "aws_kms_alias" "eks" {
 
 resource "aws_cloudwatch_log_group" "cluster" {
   name              = "/aws/eks/${var.cluster_name}/cluster"
-  retention_in_days = 7 # TODO: Adjust retention period based on compliance requirements
+  retention_in_days = 7
 
   tags = var.tags
 }

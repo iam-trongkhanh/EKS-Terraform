@@ -1,12 +1,6 @@
-# ============================================================================
-# CORE CONFIGURATION
-# ============================================================================
-
 variable "aws_region" {
   description = "AWS region where resources will be provisioned"
   type        = string
-  # TODO: Set default or provide via terraform.tfvars or environment variable
-  default = "________REPLACE_WITH_AWS_REGION________"
 }
 
 variable "project_name" {
@@ -18,28 +12,16 @@ variable "project_name" {
 variable "environment" {
   description = "Environment name (e.g., dev, staging, prod)"
   type        = string
-  # TODO: Set appropriate environment value
-  default = "________REPLACE_WITH_ENVIRONMENT_NAME________"
 }
-
-# ============================================================================
-# EKS CLUSTER CONFIGURATION
-# ============================================================================
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
   type        = string
-  # TODO: Set cluster name (should be unique within AWS account/region)
-  default = "________REPLACE_WITH_EKS_CLUSTER_NAME________"
 }
 
 variable "eks_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string
-  # Defaulting to a stable, widely-adopted version
-  # AWS EKS supports 1-2 minor versions behind current
-  # This version was chosen as it's stable and supports modern Kubernetes features
-  # TODO: Verify this version is supported in your AWS region
   default = "1.28"
 }
 
@@ -55,37 +37,19 @@ variable "enabled_cluster_log_types" {
   ]
 }
 
-# ============================================================================
-# VPC & NETWORKING CONFIGURATION
-# ============================================================================
-
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
   type        = string
-  # TODO: Ensure CIDR doesn't conflict with existing networks
-  default = "________REPLACE_WITH_VPC_CIDR_BLOCK________"
 }
 
 variable "availability_zones" {
   description = "List of availability zones for subnets"
   type        = list(string)
-  # TODO: Replace with actual AZs in your region (e.g., ["us-east-1a", "us-east-1b", "us-east-1c"])
-  default = [
-    "________REPLACE_WITH_AZ_1________",
-    "________REPLACE_WITH_AZ_2________",
-    "________REPLACE_WITH_AZ_3________"
-  ]
 }
 
 variable "private_subnet_cidrs" {
   description = "CIDR blocks for private subnets (one per AZ)"
   type        = list(string)
-  # TODO: Ensure these don't overlap with VPC CIDR or each other
-  default = [
-    "________REPLACE_WITH_PRIVATE_SUBNET_1_CIDR________",
-    "________REPLACE_WITH_PRIVATE_SUBNET_2_CIDR________",
-    "________REPLACE_WITH_PRIVATE_SUBNET_3_CIDR________"
-  ]
 }
 
 variable "enable_public_subnets" {
@@ -97,12 +61,6 @@ variable "enable_public_subnets" {
 variable "public_subnet_cidrs" {
   description = "CIDR blocks for public subnets (one per AZ, only used if enable_public_subnets = true)"
   type        = list(string)
-  # TODO: If enable_public_subnets = true, provide CIDR blocks
-  default = [
-    "________REPLACE_WITH_PUBLIC_SUBNET_1_CIDR________",
-    "________REPLACE_WITH_PUBLIC_SUBNET_2_CIDR________",
-    "________REPLACE_WITH_PUBLIC_SUBNET_3_CIDR________"
-  ]
 }
 
 variable "enable_nat_gateway" {
@@ -117,16 +75,9 @@ variable "single_nat_gateway" {
   default     = false
 }
 
-# ============================================================================
-# NODE GROUP CONFIGURATION
-# ============================================================================
-
 variable "node_group_instance_types" {
   description = "EC2 instance types for managed node groups"
   type        = list(string)
-  # TODO: Choose appropriate instance types based on workload requirements
-  # Common choices: ["t3.medium", "t3.large", "m5.large", "m5.xlarge"]
-  default = ["________REPLACE_WITH_NODE_INSTANCE_TYPE________"]
 }
 
 variable "node_group_capacity_type" {
@@ -138,21 +89,18 @@ variable "node_group_capacity_type" {
 variable "node_group_min_size" {
   description = "Minimum number of nodes in node group"
   type        = number
-  # TODO: Set based on availability requirements
   default = 1
 }
 
 variable "node_group_desired_size" {
   description = "Desired number of nodes in node group"
   type        = number
-  # TODO: Set based on expected workload
   default = 2
 }
 
 variable "node_group_max_size" {
   description = "Maximum number of nodes in node group"
   type        = number
-  # TODO: Set based on scaling requirements and cost limits
   default = 5
 }
 
@@ -186,30 +134,17 @@ variable "node_group_taints" {
   default = []
 }
 
-# ============================================================================
-# JENKINS & CI/CD CONFIGURATION
-# ============================================================================
-
 variable "jenkins_iam_role_arn" {
   description = "IAM role ARN that Jenkins uses to authenticate to EKS cluster"
   type        = string
-  # TODO: Provide the ARN of the IAM role that Jenkins assumes
-  # This role must have permissions to assume the EKS node group role or use eks:DescribeCluster
-  default = "________REPLACE_WITH_JENKINS_IAM_ROLE_ARN________"
+  default     = ""
 }
 
 variable "manage_aws_auth_configmap" {
   description = "Whether Terraform should manage the aws-auth ConfigMap. Set to false if managed by platform team or GitOps"
   type        = bool
-  # TODO: Decide who manages aws-auth ConfigMap:
-  # true = Terraform manages it (recommended for initial setup)
-  # false = Platform team manages manually or via GitOps
   default = true
 }
-
-# ============================================================================
-# ADDITIONAL ACCESS CONFIGURATION
-# ============================================================================
 
 variable "additional_admin_roles" {
   description = "Additional IAM role ARNs to grant cluster admin access (beyond Jenkins role)"
@@ -223,18 +158,9 @@ variable "additional_admin_users" {
   default     = []
 }
 
-# ============================================================================
-# TAGS
-# ============================================================================
-
 variable "common_tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
-  default = {
-    Environment = "________REPLACE_WITH_ENVIRONMENT_NAME________"
-    # TODO: Add additional tags as required by your organization
-    # Owner       = "platform-team"
-    # CostCenter  = "engineering"
-  }
+  default     = {}
 }
 
