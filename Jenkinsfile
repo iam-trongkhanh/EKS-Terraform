@@ -175,7 +175,7 @@ pipeline {
                     
                     // TODO: Install tflint if not available on agent
                     // Alternative: Use Docker image with tflint pre-installed
-                    sh '''
+                    sh """
                        #!/bin/bash
                         set -euo pipefail
 
@@ -186,7 +186,7 @@ pipeline {
                             echo "WARNING: tflint not installed, skipping lint stage"
                             echo "TODO: Install tflint or use Docker image with tflint"
                         fi
-                    '''
+                    """
                 }
             }
         }
