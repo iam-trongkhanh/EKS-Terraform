@@ -54,7 +54,7 @@ pipeline {
         // Non-sensitive environment variables
         AWS_REGION = 'ap-southeast-2' 
         AWS_CREDS_ID = 'aws-creds' 
-        TF_STATE_BUCKET = 'khanh-hoc-devops' 
+        TF_STATE_BUCKET = 'khanh-learn-devops' 
         TF_LOCK_TABLE = 'terraform-state-lock'
         
         // Terraform workspace maps to environment parameter
