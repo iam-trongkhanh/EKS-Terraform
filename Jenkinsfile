@@ -8,6 +8,7 @@ pipeline {
         timeout(time: 60, unit: 'MINUTES')
         timestamps()
         disableConcurrentBuilds()
+        // Prevent multiple pipeline runs modifying the same infrastructure
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
@@ -246,8 +247,10 @@ pipeline {
 
                             if [ $PLAN_EXIT_CODE -eq 0 ]; then
                                 echo "No changes detected"
+                                exit 0
                             elif [ $PLAN_EXIT_CODE -eq 2 ]; then
                                 echo "Changes detected - plan file created"
+                                exit 0
                             else
                                 echo "ERROR: Terraform plan failed"
                                 exit 1
