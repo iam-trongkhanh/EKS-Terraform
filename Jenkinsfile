@@ -202,9 +202,12 @@ pipeline {
                     withCredentials([
                         aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
-                        sh '''
+                       sh """
+                            #!/bin/bash
+                            set -euo pipefail
+
                             # Install tfsec if not available
-                            if ! command -v tfsec &> /dev/null; then
+                            if ! command -v tfsec >/dev/null 2>&1; then
                                 echo "Installing tfsec..."
                                 # TODO: Adjust installation method based on agent OS
                                 # Example for Linux:
@@ -225,7 +228,7 @@ pipeline {
                                 # For now, tfsec will exit with code 1 if issues found
                                 echo "Security scan completed. Review reports."
                             fi
-                        '''
+                        """
                     }
                     
                     // Archive security reports
