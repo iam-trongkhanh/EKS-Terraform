@@ -250,7 +250,9 @@ pipeline {
                     withCredentials([
                         aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
-                        sh '''
+                             sh """
+                            #!/bin/bash
+                            set -euo pipefail
                             # Generate terraform plan
                             # Pass environment variable to Terraform
                             terraform plan \
@@ -286,7 +288,7 @@ pipeline {
                     sh '''
                         echo "=== Terraform Plan Summary ==="
                         terraform show terraform.tfplan | head -100
-                    '''
+                    """
                     
                     echo "Terraform plan completed"
                 }
