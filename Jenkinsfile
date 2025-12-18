@@ -233,8 +233,8 @@ pipeline {
                         aws(credentialsId: "${env.AWS_CREDS_ID}")
                     ]) {
                         sh '''
-                            #!/bin/bash
-                            set -euo pipefail
+                            #!/bin/sh
+                            set -e
 
                             # Generate terraform plan
                             # Pass environment variable to Terraform
@@ -318,8 +318,8 @@ pipeline {
                         aws(credentialsId: "${env.AWS_CREDS_ID}")
                     ]) {
                         sh '''
-                            #!/bin/bash
-                            set -euo pipefail
+                            #!/bin/sh
+                            set -e
 
                             # Apply the saved plan file
                             terraform apply \
