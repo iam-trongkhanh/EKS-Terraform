@@ -336,14 +336,16 @@ pipeline {
                     withCredentials([
                         aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
-                        sh '''
+                          sh """
+                            #!/bin/bash
+                            set -euo pipefail
                             # Apply the saved plan file
                             terraform apply \
                                 -auto-approve \
                                 terraform.tfplan
                             
                             echo "Terraform apply completed successfully"
-                        '''
+                        """
                     }
                     
                     echo "Infrastructure changes applied to ${params.ENV}"
