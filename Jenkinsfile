@@ -176,7 +176,10 @@ pipeline {
                     // TODO: Install tflint if not available on agent
                     // Alternative: Use Docker image with tflint pre-installed
                     sh '''
-                        if command -v tflint &> /dev/null; then
+                       #!/bin/bash
+                        set -euo pipefail
+
+                        if command -v tflint >/dev/null 2>&1; then
                             tflint --init || true
                             tflint --format=default || echo "WARNING: tflint found issues (non-blocking)"
                         else
