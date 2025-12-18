@@ -1,7 +1,7 @@
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 
-  cluster_name = var.cluster_name
+  cluster_name = var.cluster_name != "cluster-name-fallback" ? var.cluster_name : "${var.project_name}-${var.environment}"
 
   vpc_name = "${local.name_prefix}-vpc"
 

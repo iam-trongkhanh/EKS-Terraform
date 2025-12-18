@@ -1,6 +1,7 @@
 variable "aws_region" {
   description = "AWS region where resources will be provisioned"
   type        = string
+   default = "ap-southeast-2"
 }
 
 variable "project_name" {
@@ -12,11 +13,14 @@ variable "project_name" {
 variable "environment" {
   description = "Environment name (e.g., dev, staging, prod)"
   type        = string
+   default = "dev"
 }
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
   type        = string
+  default = "eks-cluster"
+
 }
 
 variable "eks_version" {
@@ -40,16 +44,24 @@ variable "enabled_cluster_log_types" {
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
   type        = string
+  default = "10.0.0.0/16"
+
 }
 
 variable "availability_zones" {
   description = "List of availability zones for subnets"
   type        = list(string)
+  default = [
+    "ap-southeast-2a"
+  ]
 }
 
 variable "private_subnet_cidrs" {
   description = "CIDR blocks for private subnets (one per AZ)"
   type        = list(string)
+   default = [
+    "10.0.1.0/24","10.0.2.0/24"
+  ]
 }
 
 variable "enable_public_subnets" {
@@ -61,6 +73,9 @@ variable "enable_public_subnets" {
 variable "public_subnet_cidrs" {
   description = "CIDR blocks for public subnets (one per AZ, only used if enable_public_subnets = true)"
   type        = list(string)
+  default = [
+   "10.0.101.0/24","10.0.102.0/24"
+  ]
 }
 
 variable "enable_nat_gateway" {
@@ -78,6 +93,7 @@ variable "single_nat_gateway" {
 variable "node_group_instance_types" {
   description = "EC2 instance types for managed node groups"
   type        = list(string)
+   default = ["t3.medium"]
 }
 
 variable "node_group_capacity_type" {
@@ -161,6 +177,6 @@ variable "additional_admin_users" {
 variable "common_tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
-  default     = {}
+  default     = {"dev"}
 }
 
