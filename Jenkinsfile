@@ -8,7 +8,6 @@ pipeline {
         timeout(time: 60, unit: 'MINUTES')
         timestamps()
         disableConcurrentBuilds()
-        // Prevent multiple pipeline runs modifying the same infrastructure
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
@@ -52,21 +51,14 @@ pipeline {
 
     environment {
         // Non-sensitive environment variables
-        AWS_REGION    = 'ap-southeast-2'
-        AWS_CREDS_ID  = 'aws-creds'
+        AWS_REGION     = 'ap-southeast-2'
+        AWS_CREDS_ID   = 'aws-creds'
         TF_STATE_BUCKET = 'khanh-learn-devops'
         TF_LOCK_TABLE   = 'terraform-state-lock'
         
-        // Terraform workspace maps to environment parameter
         TF_WORKSPACE = "${params.ENV}"
-        
-        // Terraform state file key (environment-aware)
         TF_STATE_KEY = "${params.ENV}/eks/terraform.tfstate"
-        
-        // Terraform version (adjust if needed)
-        TF_VERSION = '1.5.0'
-        
-        // Security scan failure threshold
+        TF_VERSION   = '1.5.0'
         TFSEC_EXIT_CODE = '1'
     }
 
@@ -88,7 +80,6 @@ pipeline {
                 script {
                     echo "Preparing environment for ${params.ENV}"
                     
-                    // Verify required tools are installed
                     sh '''
                         echo "Checking Terraform installation..."
                         terraform version || (echo "ERROR: Terraform not found" && exit 1)
@@ -100,7 +91,6 @@ pipeline {
                         kubectl version --client || echo "WARNING: kubectl not found (may be optional)"
                     '''
                     
-                    // Clean workspace (safety measure)
                     sh 'rm -rf .terraform terraform.tfplan terraform.tfplan.json || true'
                     
                     echo "Environment prepared for ${params.ENV}"
@@ -117,7 +107,6 @@ pipeline {
                         aws(credentialsId: "${env.AWS_CREDS_ID}")
                     ]) {
                         sh '''
-                            # Initialize Terraform with backend configuration
                             terraform init \
                                 -backend-config="bucket=${TF_STATE_BUCKET}" \
                                 -backend-config="key=${TF_STATE_KEY}" \
@@ -127,7 +116,6 @@ pipeline {
                                 -reconfigure \
                                 -input=false
 
-                            # Safely select or create workspace (avoid TF_WORKSPACE override)
                             TF_WORKSPACE= terraform workspace select ${TF_WORKSPACE} 2>/dev/null || \
                               TF_WORKSPACE= terraform workspace new ${TF_WORKSPACE}
                             TF_WORKSPACE= terraform workspace show
@@ -164,8 +152,6 @@ pipeline {
                 script {
                     echo "Running Terraform lint (tflint)..."
                     
-                    // TODO: Install tflint if not available on agent
-                    // Alternative: Use Docker image with tflint pre-installed
                     sh '''
                         #!/bin/sh
                         set -e
@@ -195,14 +181,12 @@ pipeline {
                             #!/bin/sh
                             set -e
 
-                            # Install tfsec if not available
                             if ! command -v tfsec >/dev/null 2>&1; then
                                 echo "WARNING: tfsec not installed, skipping security scan stage"
                                 echo "TODO: Install tfsec or use Docker image with tfsec pre-installed"
                                 exit 0
                             fi
                             
-                            # Run tfsec scan
                             tfsec . --format=json --out=tfsec-report.json || true
                             tfsec . --format=default --out=tfsec-report.txt || true
                             
@@ -212,7 +196,6 @@ pipeline {
                         '''
                     }
                     
-                    // Archive security reports
                     archiveArtifacts artifacts: 'tfsec-report.*', allowEmptyArchive: true
                     
                     echo "Security scan completed"
@@ -232,8 +215,6 @@ pipeline {
                         sh '''
                             #!/bin/sh
 
-                            # Generate terraform plan
-                            # Pass environment variable to Terraform
                             terraform plan \
                                 -var="environment=$ENV" \
                                 -var="aws_region=$AWS_REGION" \
@@ -258,13 +239,10 @@ pipeline {
                         '''
                     }
                     
-                    // Convert plan to JSON for easier parsing (optional)
                     sh 'terraform show -json terraform.tfplan > terraform.tfplan.json || true'
                     
-                    // Archive plan file as artifact
                     archiveArtifacts artifacts: 'terraform.tfplan,terraform.tfplan.json', allowEmptyArchive: false
                     
-                    // Display plan summary
                     sh '''
                         echo "=== Terraform Plan Summary ==="
                         terraform show terraform.tfplan | head -100
@@ -283,7 +261,6 @@ pipeline {
                     echo "This will MODIFY infrastructure in environment: ${params.ENV}"
                     echo "Manual approval required before proceeding"
                     
-                    // Require manual approval
                     input(
                         id: 'terraform-apply-approval',
                         message: "Approve Terraform Apply for ${params.ENV}?",
@@ -304,7 +281,6 @@ pipeline {
                     
                     echo "Apply approved. Proceeding with terraform apply..."
                     
-                    // Verify plan file exists
                     script {
                         if (!fileExists('terraform.tfplan')) {
                             error("Plan file not found. Cannot proceed with apply. Run plan stage first.")
@@ -318,7 +294,6 @@ pipeline {
                             #!/bin/sh
                             set -e
 
-                            # Apply the saved plan file
                             terraform apply \
                                 -auto-approve \
                                 terraform.tfplan
