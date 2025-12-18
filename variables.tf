@@ -177,6 +177,7 @@ variable "additional_admin_users" {
 variable "common_tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
-  default     = {"dev"}
+  # Default empty map; add tags via tfvars or override if needed
+  default = {}
 }
 
