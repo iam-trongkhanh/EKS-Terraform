@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    //{
+    //    label '________REPLACE_WITH_JENKINS_AGENT_LABEL________'
+    //}
 
     options {
         timeout(time: 60, unit: 'MINUTES')
@@ -48,16 +51,25 @@ pipeline {
     }
 
     environment {
-        AWS_REGION = ''
-        TF_STATE_BUCKET = ''
-        TF_LOCK_TABLE = ''
-
+        // Non-sensitive environment variables
+        AWS_REGION = 'ap-southeast-2' 
+        AWS_CREDS_ID = 'aws-creds' 
+        TF_STATE_BUCKET = 'khanh-hoc-devops' 
+        TF_LOCK_TABLE = 'terraform-state-lock'
+        
+        // Terraform workspace maps to environment parameter
+        // TODO: Verify this matches your Terraform workspace strategy
+        // Alternative: Use separate tfvars files per environment if workspaces are not used
         TF_WORKSPACE = "${params.ENV}"
         
+        // Terraform state file key (environment-aware)
+        // TODO: Verify backend key structure matches your S3 bucket organization
         TF_STATE_KEY = "${params.ENV}/eks/terraform.tfstate"
         
+        // Terraform version (adjust if needed)
         TF_VERSION = '1.5.0'
         
+        // Security scan failure threshold
         TFSEC_EXIT_CODE = '1'
     }
 
@@ -78,6 +90,8 @@ pipeline {
             steps {
                 script {
                     echo "Preparing environment for ${params.ENV}"
+                    
+                    // Verify required tools are installed
                     sh '''
                         echo "Checking Terraform installation..."
                         terraform version || (echo "ERROR: Terraform not found" && exit 1)
@@ -89,6 +103,7 @@ pipeline {
                         kubectl version --client || echo "WARNING: kubectl not found (may be optional)"
                     '''
                     
+                    // Clean workspace (safety measure)
                     sh 'rm -rf .terraform terraform.tfplan terraform.tfplan.json || true'
                     
                     echo "Environment prepared for ${params.ENV}"
@@ -100,11 +115,14 @@ pipeline {
             steps {
                 script {
                     echo "Initializing Terraform for environment: ${params.ENV}"
-
+                    
                     withCredentials([
-                        aws(credentialsId: '', region: "${env.AWS_REGION}")
+                        aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
                         sh '''
+                            # Initialize Terraform with backend configuration
+                            # Note: backend-config flags override placeholders in backend.tf
+                            # This allows environment-specific backend configuration
                             terraform init \
                                 -backend-config="bucket=${TF_STATE_BUCKET}" \
                                 -backend-config="key=${TF_STATE_KEY}" \
@@ -114,6 +132,9 @@ pipeline {
                                 -reconfigure \
                                 -input=false
                             
+                            # Select or create workspace
+                            # TODO: Verify workspace strategy matches your organization's approach
+                            # Alternative: Use separate tfvars files per environment if workspaces are not used
                             terraform workspace select ${TF_WORKSPACE} || terraform workspace new ${TF_WORKSPACE}
                             terraform workspace show
                         '''
@@ -131,9 +152,9 @@ pipeline {
             steps {
                 script {
                     echo "Validating Terraform configuration..."
-
+                    
                     withCredentials([
-                        aws(credentialsId: '', region: "${env.AWS_REGION}")
+                        aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
                         sh '''
                             terraform validate
@@ -152,12 +173,16 @@ pipeline {
             steps {
                 script {
                     echo "Running Terraform lint (tflint)..."
+                    
+                    // TODO: Install tflint if not available on agent
+                    // Alternative: Use Docker image with tflint pre-installed
                     sh '''
                         if command -v tflint &> /dev/null; then
                             tflint --init || true
                             tflint --format=default || echo "WARNING: tflint found issues (non-blocking)"
                         else
                             echo "WARNING: tflint not installed, skipping lint stage"
+                            echo "TODO: Install tflint or use Docker image with tflint"
                         fi
                     '''
                 }
@@ -171,21 +196,31 @@ pipeline {
             steps {
                 script {
                     echo "Running Terraform security scan (tfsec)..."
-
+                    
                     withCredentials([
-                        aws(credentialsId: '', region: "${env.AWS_REGION}")
+                        aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
                         sh '''
+                            # Install tfsec if not available
                             if ! command -v tfsec &> /dev/null; then
                                 echo "Installing tfsec..."
+                                # TODO: Adjust installation method based on agent OS
+                                # Example for Linux:
+                                # wget -O - https://aquasecurity.github.io/tfsec/latest/install.sh | bash
                                 echo "ERROR: tfsec not installed and auto-install not configured"
                                 exit 1
                             fi
                             
+                            # Run tfsec scan
+                            # Exit code 1 = issues found (HIGH/CRITICAL severity)
+                            # Exit code 0 = no issues or only LOW/MEDIUM severity
                             tfsec . --format=json --out=tfsec-report.json || true
                             tfsec . --format=default --out=tfsec-report.txt || true
                             
+                            # Check for HIGH/CRITICAL issues
                             if [ -f tfsec-report.json ]; then
+                                # TODO: Parse JSON and fail on HIGH/CRITICAL severity
+                                # For now, tfsec will exit with code 1 if issues found
                                 echo "Security scan completed. Review reports."
                             fi
                         '''
@@ -206,18 +241,24 @@ pipeline {
             steps {
                 script {
                     echo "Running Terraform plan for environment: ${params.ENV}"
-
+                    
                     withCredentials([
-                        aws(credentialsId: '', region: "${env.AWS_REGION}")
+                        aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
-                        sh """
+                        sh '''
+                            # Generate terraform plan
+                            # Pass environment variable to Terraform
                             terraform plan \
-                                -var="environment=${params.ENV}" \
-                                -var="aws_region=${env.AWS_REGION}" \
+                                -var="environment=${ENV}" \
+                                -var="aws_region=${AWS_REGION}" \
                                 -out=terraform.tfplan \
                                 -detailed-exitcode
                             
                             PLAN_EXIT_CODE=$?
+                            
+                            # Exit code 0 = no changes
+                            # Exit code 1 = error
+                            # Exit code 2 = changes present
                             
                             if [ \$PLAN_EXIT_CODE -eq 0 ]; then
                                 echo "No changes detected"
@@ -227,13 +268,16 @@ pipeline {
                                 echo "ERROR: Terraform plan failed"
                                 exit 1
                             fi
-                        """
+                        '''
                     }
                     
+                    // Convert plan to JSON for easier parsing (optional)
                     sh 'terraform show -json terraform.tfplan > terraform.tfplan.json || true'
                     
+                    // Archive plan file as artifact
                     archiveArtifacts artifacts: 'terraform.tfplan,terraform.tfplan.json', allowEmptyArchive: false
                     
+                    // Display plan summary
                     sh '''
                         echo "=== Terraform Plan Summary ==="
                         terraform show terraform.tfplan | head -100
@@ -250,10 +294,11 @@ pipeline {
             }
             steps {
                 script {
-                    echo "=== TERRAFORM APPLY STAGE ==="
+                    echo "=== WARNING: TERRAFORM APPLY STAGE ==="
                     echo "This will MODIFY infrastructure in environment: ${params.ENV}"
                     echo "Manual approval required before proceeding"
                     
+                    // Require manual approval
                     input(
                         id: 'terraform-apply-approval',
                         message: "Approve Terraform Apply for ${params.ENV}?",
@@ -274,6 +319,7 @@ pipeline {
                     
                     echo "Apply approved. Proceeding with terraform apply..."
                     
+                    // Verify plan file exists
                     script {
                         if (!fileExists('terraform.tfplan')) {
                             error("Plan file not found. Cannot proceed with apply. Run plan stage first.")
@@ -281,9 +327,10 @@ pipeline {
                     }
                     
                     withCredentials([
-                        aws(credentialsId: '', region: "${env.AWS_REGION}")
+                        aws(credentialsId: "${env.AWS_CREDS_ID}", region: "${env.AWS_REGION}")
                     ]) {
                         sh '''
+                            # Apply the saved plan file
                             terraform apply \
                                 -auto-approve \
                                 terraform.tfplan
@@ -301,12 +348,47 @@ pipeline {
             steps {
                 script {
                     echo "Preparing notifications..."
-
+                    
                     def buildStatus = currentBuild.result ?: 'SUCCESS'
                     def envName = params.ENV
                     def buildUrl = env.BUILD_URL
                     
-                    echo "Notification step placeholder"
+                    // TODO: Implement notification to your preferred channel
+                    // Examples below (uncomment and configure as needed):
+                    
+                    /*
+                    // Slack notification example
+                    slackSend(
+                        channel: '________REPLACE_WITH_SLACK_CHANNEL________',
+                        color: buildStatus == 'SUCCESS' ? 'good' : 'danger',
+                        message: "Terraform Pipeline: ${buildStatus}\nEnvironment: ${envName}\nBuild: ${buildUrl}"
+                    )
+                    */
+                    
+                    /*
+                    // Email notification example
+                    emailext(
+                        subject: "Terraform Pipeline ${buildStatus}: ${envName}",
+                        body: "Terraform pipeline for ${envName} completed with status: ${buildStatus}\n\nBuild URL: ${buildUrl}",
+                        to: "________REPLACE_WITH_EMAIL_RECIPIENTS________",
+                        recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+                    )
+                    */
+                    
+                    /*
+                    // Generic webhook example
+                    sh """
+                        curl -X POST '________REPLACE_WITH_WEBHOOK_URL________' \
+                            -H 'Content-Type: application/json' \
+                            -d '{
+                                "status": "${buildStatus}",
+                                "environment": "${envName}",
+                                "build_url": "${buildUrl}"
+                            }'
+                    """
+                    */
+                    
+                    echo "Notification placeholder - TODO: Configure notification endpoint"
                 }
             }
         }
