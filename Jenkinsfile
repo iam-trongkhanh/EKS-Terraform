@@ -132,11 +132,10 @@ pipeline {
                                 -reconfigure \
                                 -input=false
                             
-                            # Select or create workspace
-                            # TODO: Verify workspace strategy matches your organization's approach
-                            # Alternative: Use separate tfvars files per environment if workspaces are not used
-                            terraform workspace select ${TF_WORKSPACE} || terraform workspace new ${TF_WORKSPACE}
-                            terraform workspace show
+                                       TF_WORKSPACE= terraform workspace select ${TF_WORKSPACE} 2>/dev/null || \
+                              TF_WORKSPACE= terraform workspace new ${TF_WORKSPACE}
+                            TF_WORKSPACE= terraform workspace show
+                        '''
                         '''
                     }
                     
