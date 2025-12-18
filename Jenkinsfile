@@ -1,21 +1,4 @@
-/*
- * Jenkins Pipeline Template for Terraform EKS Infrastructure
- * 
- * SETUP INSTRUCTIONS:
- * 1. Replace all placeholders marked with ________REPLACE_WITH_...________
- * 2. Configure Jenkins job as "Pipeline script from SCM" (not "Pipeline script")
- * 3. Ensure Jenkins agent has Terraform, AWS CLI, and kubectl installed
- * 4. Create AWS credentials in Jenkins Credentials Store (ID: see AWS_CREDS_ID below)
- * 5. Create S3 bucket and DynamoDB table for Terraform state backend
- * 
- * KEY FEATURES:
- * - Handles Terraform plan exit codes correctly (0=no changes, 2=changes detected, 1=error)
- * - Debug logging for AWS credentials verification
- * - Error handling with try-catch blocks
- * - Optional stages (lint, security scan) that don't fail pipeline if tools missing
- * - Manual approval required for terraform apply
- * - Artifact archiving for plan files and security reports
- */
+
 
 pipeline {
     agent any
@@ -71,10 +54,11 @@ pipeline {
 
     environment {
         // Non-sensitive environment variables
-        AWS_REGION = '________REPLACE_WITH_AWS_REGION________'
-        AWS_CREDS_ID = '________REPLACE_WITH_AWS_CREDENTIALS_ID_IN_JENKINS________'
-        TF_STATE_BUCKET = '________REPLACE_WITH_TERRAFORM_BACKEND_S3_BUCKET________'
-        TF_LOCK_TABLE = '________REPLACE_WITH_TERRAFORM_BACKEND_DYNAMODB_TABLE________'
+          AWS_REGION     = 'ap-southeast-2'
+        AWS_CREDS_ID   = 'aws-creds'
+        TF_STATE_BUCKET = 'khanh-learn-devops'
+        TF_LOCK_TABLE   = 'terraform-state-lock'
+
         
         // Terraform workspace maps to environment parameter
         TF_WORKSPACE = "${params.ENV}"
