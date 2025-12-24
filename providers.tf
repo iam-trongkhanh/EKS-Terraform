@@ -13,17 +13,18 @@ provider "aws" {
 }
 
 # Get EKS cluster token for Kubernetes provider authentication
-data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_name
-}
+# NOTE: Uncomment this when aws-auth configmap resource is enabled
+# data "aws_eks_cluster_auth" "cluster" {
+#   name = module.eks.cluster_name
+# }
 
 # Kubernetes provider configured using EKS module outputs
-# Note: This will only work after the EKS cluster is created
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
-}
+# NOTE: Uncomment this when aws-auth configmap resource is enabled
+# provider "kubernetes" {
+#   host                   = module.eks.cluster_endpoint
+#   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+#   token                  = data.aws_eks_cluster_auth.cluster.token
+# }
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}

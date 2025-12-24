@@ -94,54 +94,56 @@ module "node_groups" {
 # ============================================================================
 # AWS AUTH CONFIGMAP (Kubernetes Authentication)
 # ============================================================================
+# NOTE: EKS automatically manages aws-auth configmap for node groups
+# Uncomment this resource only if you need to add additional IAM roles/users
 
-resource "kubernetes_config_map_v1_data" "aws_auth" {
-  count = var.manage_aws_auth_configmap ? 1 : 0
-
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
-
-  data = {
-    mapRoles = yamlencode(concat(
-      [
-        {
-          rolearn  = module.iam.node_group_role_arn
-          username = "system:node:{{EC2PrivateDNSName}}"
-          groups   = ["system:bootstrappers", "system:nodes"]
-        }
-      ],
-      var.jenkins_iam_role_arn != "" ? [
-        {
-          rolearn  = var.jenkins_iam_role_arn
-          username = "jenkins"
-          groups   = ["system:masters"]
-        }
-      ] : [],
-      [for role_arn in var.additional_admin_roles : {
-        rolearn  = role_arn
-        username = split("/", role_arn)[length(split("/", role_arn)) - 1]
-        groups   = ["system:masters"]
-      }]
-    ))
-    mapUsers = yamlencode([
-      for user_arn in var.additional_admin_users : {
-        userarn  = user_arn
-        username = split("/", user_arn)[length(split("/", user_arn)) - 1]
-        groups   = ["system:masters"]
-      }
-    ])
-  }
-
-  depends_on = [
-    module.eks,
-    module.node_groups
-  ]
-
-  lifecycle {
-    create_before_destroy = true
-    ignore_changes = [data]
-  }
-}
+# resource "kubernetes_config_map_v1_data" "aws_auth" {
+#   count = var.manage_aws_auth_configmap ? 1 : 0
+#
+#   metadata {
+#     name      = "aws-auth"
+#     namespace = "kube-system"
+#   }
+#
+#   data = {
+#     mapRoles = yamlencode(concat(
+#       [
+#         {
+#           rolearn  = module.iam.node_group_role_arn
+#           username = "system:node:{{EC2PrivateDNSName}}"
+#           groups   = ["system:bootstrappers", "system:nodes"]
+#         }
+#       ],
+#       var.jenkins_iam_role_arn != "" ? [
+#         {
+#           rolearn  = var.jenkins_iam_role_arn
+#           username = "jenkins"
+#           groups   = ["system:masters"]
+#         }
+#       ] : [],
+#       [for role_arn in var.additional_admin_roles : {
+#         rolearn  = role_arn
+#         username = split("/", role_arn)[length(split("/", role_arn)) - 1]
+#         groups   = ["system:masters"]
+#       }]
+#     ))
+#     mapUsers = yamlencode([
+#       for user_arn in var.additional_admin_users : {
+#         userarn  = user_arn
+#         username = split("/", user_arn)[length(split("/", user_arn)) - 1]
+#         groups   = ["system:masters"]
+#       }
+#     ])
+#   }
+#
+#   depends_on = [
+#     module.eks,
+#     module.node_groups
+#   ]
+#
+#   lifecycle {
+#     create_before_destroy = true
+#     ignore_changes = [data]
+#   }
+# }
 
