@@ -90,22 +90,22 @@ pipeline {
             steps {
                 script {
                     echo "Preparing environment for ${params.ENV}"
-                    
+
                     // Verify required tools are installed
                     sh '''
                         echo "Checking Terraform installation..."
                         terraform version || (echo "ERROR: Terraform not found" && exit 1)
-                        
+
                         echo "Checking AWS CLI installation..."
                         aws --version || (echo "ERROR: AWS CLI not found" && exit 1)
-                        
+
                         echo "Checking kubectl installation (if needed)..."
                         kubectl version --client || echo "WARNING: kubectl not found (may be optional)"
                     '''
-                    
+
                     // Clean workspace (safety measure)
                     sh 'rm -rf .terraform terraform.tfplan terraform.tfplan.json || true'
-                    
+
                     echo "Environment prepared for ${params.ENV}"
                 }
             }
@@ -140,6 +140,16 @@ pipeline {
                     }
                     
                     echo "Terraform initialized successfully"
+
+                    // Remove any lingering Kubernetes resources from state (if they exist)
+                    sh '''
+                        echo "Checking for Kubernetes resources in state..."
+                        terraform state list 2>/dev/null | grep -i kubernetes || echo "No Kubernetes resources found"
+                        terraform state list 2>/dev/null | grep -i kubernetes | while read resource; do
+                          echo "Removing $resource from state..."
+                          terraform state rm "$resource" || true
+                        done || echo "Kubernetes resource cleanup completed"
+                    '''
                 }
             }
         }
