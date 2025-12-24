@@ -140,6 +140,7 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes = [data]
   }
 }
 

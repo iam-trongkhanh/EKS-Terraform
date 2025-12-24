@@ -12,16 +12,21 @@ provider "aws" {
   }
 }
 
-# Kubernetes provider configured after EKS cluster is created
-# See outputs.tf and main.tf for cluster configuration
+# Get existing EKS cluster info for Kubernetes provider
+# This works both for new clusters and when updating existing infrastructure
+data "aws_eks_cluster" "existing" {
+  name = var.cluster_name
+}
+
+# Kubernetes provider configured using data source to work with existing clusters
 provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  host                   = data.aws_eks_cluster.existing.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.existing.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_name
+  name = data.aws_eks_cluster.existing.name
 }
 
 data "aws_caller_identity" "current" {}
