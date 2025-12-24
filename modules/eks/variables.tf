@@ -47,6 +47,12 @@ variable "enable_irsa" {
   default     = true
 }
 
+variable "allowed_security_group_ids" {
+  description = "List of security group IDs to allow access to EKS API (e.g., jump server SG)"
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

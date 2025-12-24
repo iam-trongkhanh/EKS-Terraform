@@ -160,9 +160,9 @@ variable "jenkins_iam_role_arn" {
 }
 
 variable "manage_aws_auth_configmap" {
-  description = "Whether Terraform should manage the aws-auth ConfigMap. Set to false if managed by platform team or GitOps"
+  description = "Whether Terraform should manage the aws-auth ConfigMap. Set to false for initial cluster creation, then true for subsequent runs"
   type        = bool
-  default = true
+  default     = false
 }
 
 variable "additional_admin_roles" {
@@ -173,6 +173,12 @@ variable "additional_admin_roles" {
 
 variable "additional_admin_users" {
   description = "Additional IAM user ARNs to grant cluster admin access"
+  type        = list(string)
+  default     = []
+}
+
+variable "eks_allowed_security_group_ids" {
+  description = "List of security group IDs to allow access to EKS API server (e.g., jump server SG)"
   type        = list(string)
   default     = []
 }

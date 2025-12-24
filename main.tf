@@ -47,7 +47,8 @@ module "eks" {
 
   enabled_cluster_log_types = var.enabled_cluster_log_types
 
-  enable_irsa = true
+  enable_irsa                = true
+  allowed_security_group_ids = var.eks_allowed_security_group_ids
 
   tags = local.common_tags
 

@@ -34,6 +34,25 @@ resource "aws_eks_cluster" "main" {
 }
 
 # ============================================================================
+# SECURITY GROUP RULE FOR EKS API ACCESS
+# ============================================================================
+
+# Allow inbound HTTPS access to EKS API from allowed security groups
+resource "aws_security_group_rule" "cluster_api_ingress" {
+  count = length(var.allowed_security_group_ids) > 0 ? 1 : 0
+
+  description              = "Allow EKS API access from allowed security groups"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = var.allowed_security_group_ids[0]
+  security_group_id        = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+  type                     = "ingress"
+
+  depends_on = [aws_eks_cluster.main]
+}
+
+# ============================================================================
 # KMS KEY FOR EKS ENCRYPTION
 # ============================================================================
 
