@@ -27,3 +27,4 @@ terraform.rc
 # .terraform.lock.hcl
 
 terraform.tfvars.example
+note.txt

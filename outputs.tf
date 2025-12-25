@@ -113,4 +113,3 @@ output "jenkins_integration_note" {
   description = "Instructions for Jenkins to access the cluster"
   value       = var.jenkins_iam_role_arn != "" ? "Jenkins role configured in aws-auth ConfigMap. Ensure Jenkins assumes this role before accessing cluster." : "WARNING: Jenkins IAM role ARN not configured."
 }
-
