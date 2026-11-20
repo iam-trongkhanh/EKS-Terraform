@@ -1,13 +1,26 @@
-# Production-Grade AWS EKS Terraform Infrastructure
+# EKS-Terraform: an Amazon EKS lab in Terraform
+
+Personal lab by Khanh Trong Le (Lê Trọng Khánh). Terraform modules for an Amazon EKS
+cluster layout: a VPC with private worker subnets and NAT egress, managed node groups,
+KMS encryption for Kubernetes Secrets, control-plane logging and an OIDC provider for IRSA.
+
+**Scope.** This repository is infrastructure code and documentation. It was not applied
+for the case study, and it does not describe a running cluster. Review `variables.tf` and
+`backend.tf` before running `terraform plan`.
+
+**Case study:** [Amazon EKS with Terraform](https://khanhcloud.online/work/eks-terraform/)
+follows the private-subnet routes, the NAT path and the API endpoint settings, with links
+to the exact lines at commit `8c5873c`.
 
 ## Overview
 
-This Terraform project provisions a **production-ready AWS EKS cluster** designed for:
+The layout makes the dependencies between AWS pieces visible:
 
-- Jenkins-based CI/CD workflows
-- Platform team ownership
-- Long-term enterprise operations
-- Multiple application teams
+- Networking, cluster, node groups and IAM are separate modules with explicit outputs.
+- Worker nodes sit in private subnets. With NAT enabled (the default), outbound traffic goes
+  through one shared NAT gateway or one per Availability Zone (`single_nat_gateway`).
+- An `aws-auth` mapping for a Jenkins IAM role (`jenkins_iam_role_arn`) is included in
+  `main.tf` but commented out; enable it only after the cluster exists.
 
 ---
 
@@ -21,7 +34,7 @@ This Terraform project provisions a **production-ready AWS EKS cluster** designe
 
 ### 2. **Private Networking by Default**
 
-- **Rationale**: Security-first approach for production workloads
+- **Rationale**: Keep worker nodes off public IPs
 - **Implementation**: Nodes run in private subnets; control plane has controlled access
 - **NAT Gateway**: Enabled by default for internet access (cost: ~$32/month per gateway)
 - **Optimization**: Option to use single NAT Gateway across AZs for cost savings (reduces HA)
@@ -56,7 +69,7 @@ This Terraform project provisions a **production-ready AWS EKS cluster** designe
 
 - **Scope**: Secrets encryption at rest
 - **Key Rotation**: Enabled
-- **Rationale**: Enterprise security requirement
+- **Rationale**: Encrypt Kubernetes Secrets at rest with a key you control
 
 ### 8. **aws-auth ConfigMap Management**
 
@@ -527,6 +540,6 @@ kubectl get namespaces
 
 ## Support & Contributions
 
-This is a production-grade baseline. Customize as needed for your organization's requirements.
+This is a learning lab, not a production baseline. Review and adapt it before any real use.
 
-**Remember**: Always review `terraform plan` output before applying in production!
+**Remember**: Always review `terraform plan` output before applying.
